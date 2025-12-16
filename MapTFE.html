@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <title>Mappa turistica di Tenerife</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- MarkerCluster CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+
+  <style>
+    html, body { height: 100%; margin: 0; font-family: Arial, sans-serif; }
+    #map { height: 100%; width: 80%; float: right; }
+    #sidebar { width: 20%; height: 100%; overflow-y: auto; float: left; padding: 10px; box-sizing: border-box; background: #f9f9f9; display: flex; flex-direction: column; }
+    .sidebar-item { cursor: pointer; margin-bottom: 5px; padding: 5px; border-bottom: 1px solid #ddd; }
+    .sidebar-item:hover { background: #e0e0e0; }
+    .popup h3 { margin:0 0 6px 0; font-size:16px; }
+    .popup a { color:#1a73e8; text-decoration:none; font-weight:bold; }
+    #sidebar-footer { margin-top: auto; font-size: 14px; color: #999; text-align: center; padding: 10px 0; }
+  </style>
+
+</head>
+<body>
+
+<div id="sidebar">
+  <h2>Luoghi da visitare</h2>
+  <div id="placeList"></div>
+  <div id="sidebar-footer">Marco Cot, 2025</div>
+</div>
+
+<div id="map"></div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- MarkerCluster JS -->
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+<script>
+// =====================
+// DATI
+// =====================
+const places = [
+  { name: "Drago Milenario", coords: [28.3665471, -16.7222160], info: "Albero monumentale con parco naturale a Icod de los Vinos", wiki: "https://es.wikipedia.org/wiki/Dracaena_draco" },
+  { name: "Garachico", coords: [28.37222, -16.76389], info: "Antica località portuale colpita dall'eruzione del 1706", wiki: "https://it.wikipedia.org/wiki/Garachico" },
+  { name: "La Orotava", coords: [28.3908, -16.5231], info: "Cittadina storica del XV secolo", wiki: "https://it.wikipedia.org/wiki/La_Orotava" },
+  { name: "Puerto de la Cruz", coords: [28.417, -16.533], info: "Località turistica del nord (Loro Parque, Lago Martiánez)", wiki: "https://it.wikipedia.org/wiki/Puerto_de_la_Cruz" },
+  { name: "Parador del Teide", coords: [28.224758, -16.627207], info: "Nel Parco Nazionale del Teide, panorami vulcanici", wiki: "https://it.wikipedia.org/wiki/Parco_nazionale_del_Teide" },
+  { name: "Los Cristianos", coords: [28.048906, -16.711597], info: "Principale località turistica del sud", wiki: "https://it.wikipedia.org/wiki/Los_Cristianos" },
+  { name: "Santa Cruz de Tenerife", coords: [28.46824, -16.25462], info: "Capoluogo dell'isola, famoso per il Carnevale", wiki: "https://it.wikipedia.org/wiki/Santa_Cruz_de_Tenerife" },
+  { name: "Pico del Inglés (Anaga)", coords: [28.536605, -16.268907], info: "Belvedere nel Parco Rurale di Anaga", wiki: "https://it.wikipedia.org/wiki/Massiccio_di_Anaga" },
+  { name: "San Cristóbal de La Laguna", coords: [28.48528, -16.31667], info: "Città patrimonio UNESCO", wiki: "https://it.wikipedia.org/wiki/San_Crist%C3%B3bal_de_La_Laguna" },
+  { name: "Loro Parque", coords: [28.4084, -16.5650], info: "Parco zoologico e marino", wiki: "https://it.wikipedia.org/wiki/Loro_Parque" },
+  { name: "Siam Park", coords: [28.072045, -16.72565], info: "Grande parco acquatico del sud", wiki: "https://es.wikipedia.org/wiki/Siam_Park" },
+  { name: "Sanatorio de Abades", coords: [28.14585, -16.43532], info: "Rovine di un sanatorio abbandonato (mi dicono deludente)", wiki: "https://apiediilmondo.it/tenerife-il-sanatorio-di-abades/" },
+  { name: "El Médano", coords: [28.04539, -16.53748], info: "Famosa per wind e kitesurf", wiki: "https://it.wikipedia.org/wiki/El_M%C3%A9dano" },
+  { name: "Masca", coords: [28.30684, -16.83947], info: "Villaggio montano spettacolare", wiki: "https://it.wikipedia.org/wiki/Masca_(Spagna)" },
+  { name: "Los Gigantes", coords: [28.24787, -16.84166], info: "Scogliere basaltiche monumentali", wiki: "https://it.wikipedia.org/wiki/Los_Gigantes" }
+];
+
+// =====================
+// MAPPA
+// =====================
+const map = L.map('map').setView([28.30, -16.55], 9);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors', maxZoom: 18 }).addTo(map);
+
+const markers = L.markerClusterGroup();
+let currentPopup = null;
+
+places.forEach(p => {
+  const marker = L.marker(p.coords);
+  const popupContent = `<div class="popup"><h3>${p.name}</h3><div>${p.info}</div><a href="${p.wiki}" target="_blank">Apri info</a></div>`;
+  marker.bindPopup(popupContent);
+  marker.on('click', () => {
+    if (currentPopup && currentPopup !== marker.getPopup()) currentPopup.close();
+    marker.openPopup();
+    currentPopup = marker.getPopup();
+  });
+  markers.addLayer(marker);
+});
+map.addLayer(markers);
+
+// =====================
+// SIDEBAR
+// =====================
+const placeListDiv = document.getElementById('placeList');
+places.forEach((p, i) => {
+  const div = document.createElement('div');
+  div.className = 'sidebar-item';
+  div.innerText = p.name;
+  div.addEventListener('click', () => {
+    map.flyTo(p.coords, 13, { duration: 1.5 });
+    markers.getLayers()[i].openPopup();
+  });
+  placeListDiv.appendChild(div);
+});
+
+
+
+</script>
+</body>
+</html>
